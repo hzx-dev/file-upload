@@ -64,28 +64,41 @@
 
             (async () => {
                 try {
-                    const response = await fetch(file);
+                    const response = await fetch(file, { method: 'HEAD' });
                     if (!response.ok) throw new Error('文件未找到或无法访问');
-                    const blob = await response.blob();
-                    const size = blob.size;
-                    document.getElementById('filesize').textContent = `文件大小：${(size / 1000).toFixed(2)} KB`;
 
-                    const arrayBuffer = await blob.arrayBuffer();
-                    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-                    const hashArray = Array.from(new Uint8Array(hashBuffer));
-                    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                    document.getElementById('filehash').textContent = `SHA-256：${hashHex}`;
+                    const contentLength = response.headers.get('Content-Length');
+                    const contentType = response.headers.get('Content-Type');
+
+                    if (contentLength) {
+                        document.getElementById('filesize').textContent = `文件大小：${(contentLength / 1000).toFixed(2)} KB`;
+                    } else {
+                        document.getElementById('filesize').textContent = '无法获取文件大小';
+                    }
+
+                    if (contentType) {
+                        document.getElementById('filehash').textContent = `文件类型：${contentType}，哈希将在下载后生成`;
+                    } else {
+                        document.getElementById('filehash').textContent = '文件类型未知，哈希将在下载后生成';
+                    }
 
                     // 设置按钮下载逻辑
-                    downloadBtn.onclick = function() {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = file.split('/').pop();
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        URL.revokeObjectURL(url);
+                    downloadBtn.onclick = async function() {
+                        try {
+                            const downloadResponse = await fetch(file);
+                            if (!downloadResponse.ok) throw new Error('下载失败');
+                            const blob = await downloadResponse.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = file.split('/').pop();
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            URL.revokeObjectURL(url);
+                        } catch (downloadErr) {
+                            alert('下载失败：' + downloadErr.message);
+                        }
                     };
                 } catch (err) {
                     const errinfo = document.getElementById('errorinfo');
@@ -97,6 +110,7 @@
                     const size = document.getElementById('filesize');
                     hash.style = "display: none";
                     size.style = "display: none";
+                    return;
                 }
             })();
 

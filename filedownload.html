@@ -48,7 +48,6 @@
     <!-- <p id="filename">正在加载文件名...</p> -->
     <p id="errorinfo" style="display: none; "></p>
     <p id="filesize">正在加载文件信息...</p>
-    <p id="filehash"></p>
     <button id="downloadBtn" style="display: none; ">请稍等...</button>
 
     <script>
@@ -68,18 +67,16 @@
                     if (!response.ok) throw new Error('文件未找到或无法访问');
 
                     const contentLength = response.headers.get('Content-Length');
-                    const contentType = response.headers.get('Content-Type');
 
                     if (contentLength) {
-                        document.getElementById('filesize').textContent = `文件大小：${(contentLength / 1000).toFixed(2)} KB`;
+                        const lengthNum = Number(contentLength);
+                        if (lengthNum >= 1000 * 1000) {
+                            document.getElementById('filesize').textContent = `文件大小：${(lengthNum / (1000 * 1000)).toFixed(2)} MB`;
+                        } else {
+                            document.getElementById('filesize').textContent = `文件大小：${(lengthNum / 1000).toFixed(2)} KB`;
+                        }
                     } else {
                         document.getElementById('filesize').textContent = '无法获取文件大小';
-                    }
-
-                    if (contentType) {
-                        document.getElementById('filehash').textContent = `文件类型：${contentType}，哈希将在下载后生成`;
-                    } else {
-                        document.getElementById('filehash').textContent = '文件类型未知，哈希将在下载后生成';
                     }
 
                     // 设置按钮下载逻辑
@@ -106,9 +103,7 @@
                     errinfo.style = "color: red;"
                     downloadBtn.disabled = true;
                     downloadBtn.style = "display: none";
-                    const hash = document.getElementById('filehash');
                     const size = document.getElementById('filesize');
-                    hash.style = "display: none";
                     size.style = "display: none";
                     return;
                 }
@@ -121,9 +116,7 @@
             fileNameDisplay.textContent = '错误：未指定 file 参数。';
             downloadBtn.disabled = true;
             downloadBtn.style = "display: none";
-            const hash = document.getElementById('filehash');
             const size = document.getElementById('filesize');
-            hash.style = "display: none";
             size.style = "display: none";
         }
     </script>

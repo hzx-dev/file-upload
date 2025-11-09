@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>文件下载</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin-top: 100px;
+            background-color: #fff;
+            color: #000;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #f0f0f0;
+            color: #000;
+            border: 1px solid #ccc;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+            }
+            button {
+                background-color: #333;
+                color: #e0e0e0;
+                border: 1px solid #555;
+            }
+            button:hover {
+                background-color: #444;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 id="title">文件下载确认</h1>
+    <!-- <p id="filename">正在加载文件名...</p> -->
+    <p id="filesize"></p>
+    <p id="filehash"></p>
+    <button id="downloadBtn">确认下载</button>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const file = params.get('file');
+
+        const fileNameDisplay = document.getElementById('title');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        if (file) {
+            fileNameDisplay.textContent = `将要下载：${file}`;
+            document.title = `下载 ${file}`;
+
+            (async () => {
+                try {
+                    const response = await fetch(file);
+                    if (!response.ok) throw new Error('文件未找到或无法访问');
+                    const blob = await response.blob();
+                    const size = blob.size;
+                    document.getElementById('filesize').textContent = `文件大小：${(size / 1000).toFixed(2)} KB`;
+
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                    document.getElementById('filehash').textContent = `SHA-256：${hashHex}`;
+
+                    // 设置按钮下载逻辑
+                    downloadBtn.onclick = function() {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = file.split('/').pop();
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+                    };
+                } catch (err) {
+                    alert('文件信息加载失败：' + err.message);
+                    downloadBtn.disabled = true;
+                }
+            })();
+        } else {
+            fileNameDisplay.textContent = '错误：未指定 file 参数。';
+            downloadBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>

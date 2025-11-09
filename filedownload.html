@@ -19,6 +19,14 @@
             color: #000;
             border: 1px solid #ccc;
         }
+        button :disabled {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #a4a4a4;
+            color: #000;
+            border: 1px solid #ccc;
+        }
         @media (prefers-color-scheme: dark) {
             body {
                 background-color: #121212;
@@ -38,9 +46,10 @@
 <body>
     <h1 id="title">文件下载确认</h1>
     <!-- <p id="filename">正在加载文件名...</p> -->
-    <p id="filesize"></p>
+    <p id="errorinfo" style="display: none; "></p>
+    <p id="filesize">正在加载文件信息...</p>
     <p id="filehash"></p>
-    <button id="downloadBtn">确认下载</button>
+    <button id="downloadBtn" style="display: none; ">请稍等...</button>
 
     <script>
         const params = new URLSearchParams(window.location.search);
@@ -50,7 +59,7 @@
         const downloadBtn = document.getElementById('downloadBtn');
 
         if (file) {
-            fileNameDisplay.textContent = `将要下载：${file}`;
+            fileNameDisplay.textContent = `将要下载 ${file}`;
             document.title = `下载 ${file}`;
 
             (async () => {
@@ -79,13 +88,29 @@
                         URL.revokeObjectURL(url);
                     };
                 } catch (err) {
-                    alert('文件信息加载失败：' + err.message);
+                    const errinfo = document.getElementById('errorinfo');
+                    errinfo.innerText = '文件信息加载失败：' + err.message;
+                    errinfo.style = "color: red;"
                     downloadBtn.disabled = true;
+                    downloadBtn.style = "display: none";
+                    const hash = document.getElementById('filehash');
+                    const size = document.getElementById('filesize');
+                    hash.style = "display: none";
+                    size.style = "display: none";
                 }
             })();
+
+            downloadBtn.disabled = false;
+            downloadBtn.innerText = "确认下载";
+            downloadBtn.style = "";
         } else {
             fileNameDisplay.textContent = '错误：未指定 file 参数。';
             downloadBtn.disabled = true;
+            downloadBtn.style = "display: none";
+            const hash = document.getElementById('filehash');
+            const size = document.getElementById('filesize');
+            hash.style = "display: none";
+            size.style = "display: none";
         }
     </script>
 </body>
